@@ -32,7 +32,7 @@ def send_message():
         message_queues[receiver_id].append(data)
         print(f"Message for {receiver_id}: {data}")
         if receiver_id == 4000 and data.get("type") == 1:
-            terminal_notice = f"Output: {data.get("data")}"
+            terminal_notice = f"Output: {data.get('data')}"
         return jsonify({"status": "ok"}), 200
     except Exception as e:
         print("Send Error:", e)
