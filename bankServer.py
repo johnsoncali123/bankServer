@@ -8,7 +8,7 @@ terminal_notice = None
 HTML_FORM = """
 <!doctype html>
 <title>Send Message</title>
-<h2>JewNet™</h2>
+<h2>KippahConnect™</h2>
 <form method="post">
   <label>TO:</label><br>
   <input type="number" name="to" required><br><br>
@@ -18,10 +18,6 @@ HTML_FORM = """
 
   <input type="submit" value="SEND">
 </form>
-
-{% if message %}
-  <p><strong>{{ message }}</strong></p>
-{% endif %}
 
 <hr>
 <div style='color:green' id="terminal-output">
