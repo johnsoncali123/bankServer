@@ -1,32 +1,28 @@
 from flask import Flask, request, jsonify, render_template_string
 from collections import defaultdict
-
 app = Flask(__name__)
 message_queues = defaultdict(list)
-
-# HTML form for the /terminal page
 HTML_FORM = """
 <!doctype html>
 <title>Send Message</title>
-<h2>Send Message to Minecraft</h2>
+<h2>JewNet™</h2>
 <form method="post">
-  <label>Receiver ID:</label><br>
+  <label>TO:</label><br>
   <input type="number" name="to" required><br><br>
 
-  <label>Type:</label><br>
+  <label>TYPE:</label><br>
   <input type="number" name="type" required><br><br>
 
-  <label>Data (comma-separated for list):</label><br>
+  <label>DATA:</label><br>
   <input type="text" name="data" required><br><br>
 
-  <input type="submit" value="Send">
+  <input type="submit" value="SEND">
 </form>
 
 {% if message %}
   <p><strong>{{ message }}</strong></p>
 {% endif %}
 """
-
 @app.route('/send', methods=['POST'])
 def send_message():
     try:
@@ -34,22 +30,18 @@ def send_message():
         receiver_id = data.get("to")
         if receiver_id is None:
             return jsonify({"error": "'to' field is required"}), 400
-        
         message_queues[receiver_id].append(data)
         print(f"Message for {receiver_id}: {data}")
         return jsonify({"status": "ok"}), 200
     except Exception as e:
         print("Send Error:", e)
         return jsonify({"error": "Invalid JSON"}), 400
-
 @app.route('/receive/<int:receiver_id>', methods=['GET'])
 def receive_message(receiver_id):
     queue = message_queues[receiver_id]
     messages = queue[:]
-    message_queues[receiver_id] = []  # Clear the queue
+    message_queues[receiver_id] = []
     return jsonify(messages), 200
-
-# ✅ New route for manual input via browser
 @app.route('/terminal', methods=['GET', 'POST'])
 def terminal():
     message = None
@@ -58,25 +50,21 @@ def terminal():
             to = int(request.form['to'])
             msg_type = int(request.form['type'])
             data_raw = request.form['data']
-            # Convert comma-separated string to list of numbers if possible
             try:
                 data = [int(x.strip()) for x in data_raw.split(',')]
             except ValueError:
-                data = data_raw.strip()  # fallback: send as string
-
+                data = data_raw.strip()
             packet = {
                 "to": to,
-                "from": -1,  # could change to user input later
+                "from": -1,
                 "type": msg_type,
                 "data": data
             }
             message_queues[to].append(packet)
             print(f"Terminal message for {to}: {packet}")
-            message = f"✅ Message sent to computer {to}!"
+            message = f"Sent."
         except Exception as e:
-            message = f"❌ Error: {str(e)}"
-
+            message = f"Error: {str(e)}"
     return render_template_string(HTML_FORM, message=message)
-
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8000)
