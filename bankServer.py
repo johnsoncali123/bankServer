@@ -24,16 +24,28 @@ HTML_FORM = """
 {% endif %}
 
 <hr>
-<p style='color:green' id="terminal-output">{{ notice or '' }}</p>
+<div style='color:green' id="terminal-output">
+  {% if notice %}
+    {% for line in notice %}
+      <p>{{ line }}</p>
+    {% endfor %}
+  {% endif %}
+</div>
 
 <script>
-setInterval(function() {
-    fetch("/terminal/status")
-        .then(response => response.json())
-        .then(data => {
-            document.getElementById("terminal-output").textContent = data.notice || "";
-        });
-}, 500); // poll every 1 second
+setInterval(function () {
+  fetch("/terminal/status")
+    .then(response => response.json())
+    .then(data => {
+      const container = document.getElementById("terminal-output");
+      container.innerHTML = "";
+      (data.notice || []).forEach(line => {
+        const p = document.createElement("p");
+        p.textContent = line;
+        container.appendChild(p);
+      });
+    });
+}, 1000); // poll every 1 second
 </script>
 """
 
@@ -48,7 +60,11 @@ def send_message():
         message_queues[receiver_id].append(data)
         print(f"Message for {receiver_id}: {data}")
         if receiver_id == 4000 and data.get("type") == 1:
-            terminal_notice = f"Output: {str(data.get('data'))}"
+            received = data.get("data")
+            if isinstance(received, list):
+                terminal_notice = received
+            else:
+                terminal_notice = [str(received)]
         return jsonify({"status": "ok"}), 200
     except Exception as e:
         print("Send Error:", e)
@@ -90,7 +106,7 @@ def terminal():
 # New endpoint just for polling the latest terminal output
 @app.route('/terminal/status')
 def terminal_status():
-    return jsonify({"notice": terminal_notice})
+    return jsonify({"notice": terminal_notice or []})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8000)
