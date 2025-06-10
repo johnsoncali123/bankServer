@@ -10,10 +10,7 @@ HTML_FORM = """
 <form method="post">
   <label>TO:</label><br>
   <input type="number" name="to" required><br><br>
-
-  <label>TYPE:</label><br>
-  <input type="number" name="type" required><br><br>
-
+  
   <label>DATA:</label><br>
   <input type="text" name="data" required><br><br>
 
@@ -35,7 +32,7 @@ def send_message():
         message_queues[receiver_id].append(data)
         print(f"Message for {receiver_id}: {data}")
         if receiver_id == 4000 and data.get("type") == 1:
-            terminal_notice = f"Output: {data}"
+            terminal_notice = f"Output: {data.get("data")}"
         return jsonify({"status": "ok"}), 200
     except Exception as e:
         print("Send Error:", e)
@@ -54,7 +51,7 @@ def terminal():
     if request.method == 'POST':
         try:
             to = int(request.form['to'])
-            msg_type = int(request.form['type'])
+            msg_type = 0
             data_raw = request.form['data']
             try:
                 data = [int(x.strip()) for x in data_raw.split(',')]
