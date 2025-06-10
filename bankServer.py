@@ -1,8 +1,10 @@
 from flask import Flask, request, jsonify, render_template_string
 from collections import defaultdict
+
 app = Flask(__name__)
 message_queues = defaultdict(list)
 terminal_notice = None
+
 HTML_FORM = """
 <!doctype html>
 <title>Send Message</title>
@@ -20,7 +22,21 @@ HTML_FORM = """
 {% if message %}
   <p><strong>{{ message }}</strong></p>
 {% endif %}
+
+<hr>
+<p style='color:green' id="terminal-output">{{ notice or '' }}</p>
+
+<script>
+setInterval(function() {
+    fetch("/terminal/status")
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById("terminal-output").textContent = data.notice || "";
+        });
+}, 500); // poll every 1 second
+</script>
 """
+
 @app.route('/send', methods=['POST'])
 def send_message():
     global terminal_notice
@@ -37,13 +53,14 @@ def send_message():
     except Exception as e:
         print("Send Error:", e)
         return jsonify({"error": "Invalid JSON"}), 400
+
 @app.route('/receive/<int:receiver_id>', methods=['GET'])
 def receive_message(receiver_id):
     queue = message_queues[receiver_id]
     messages = queue[:]
     message_queues[receiver_id] = []
     return jsonify(messages), 200
-@app.route('/terminal', methods=['GET', 'POST'])
+
 @app.route('/terminal', methods=['GET', 'POST'])
 def terminal():
     global terminal_notice
@@ -68,8 +85,12 @@ def terminal():
             message = f"SENT."
         except Exception as e:
             message = f"ERROR: {str(e)}"
-    return render_template_string(HTML_FORM + (
-        f"<hr><p style='color:green'>{terminal_notice}</p>" if terminal_notice else ""
-    ), message=message)
+    return render_template_string(HTML_FORM, message=message, notice=terminal_notice)
+
+# New endpoint just for polling the latest terminal output
+@app.route('/terminal/status')
+def terminal_status():
+    return jsonify({"notice": terminal_notice})
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8000)
