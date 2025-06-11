@@ -8,7 +8,7 @@ terminal_notice = None
 HTML_FORM = """
 <!doctype html>
 <title>Send Message</title>
-<h2>KippahConnect™</h2>
+<img src="{{ url_for('static', filename='KC.png') }}" alt="Logo" style="height: 80px;">
 <form method="post">
   <label>TO:</label><br>
   <input type="number" name="to" required><br><br>
