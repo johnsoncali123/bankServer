@@ -20,7 +20,7 @@ HTML_FORM = """
 </form>
 
 <hr>
-<div style='color:green' id="terminal-output">
+<div style='color:blue' id="terminal-output">
   {% if notice %}
     {% for line in notice %}
       <p>{{ line }}</p>
