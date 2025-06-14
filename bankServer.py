@@ -30,23 +30,27 @@ setInterval(function () {
     .then(data => {
       const container = document.getElementById("terminal-output");
       container.innerHTML = "";
-
-      // normalize to an array
-      let lines = data.notice || [];
-      if (typeof lines === "string") {
-        try {
-          lines = JSON.parse(lines);
-        } catch (e) {
-          lines = [lines];
+        // normalize to an array (same as before)
+        let lines = data.notice || [];
+        if (typeof lines === "string") {
+          try {
+            lines = JSON.parse(lines);
+          } catch (e) {
+            lines = [lines];
+          }
         }
-      }
 
-      // now print each line
-      lines.forEach(line => {
-        const p = document.createElement("p");
-        p.textContent = line;
-        container.appendChild(p);
-      });
+        // drop the first prompt entry if it’s exactly “Select an option.”
+        if (lines[0] === "Select an option.") {
+          lines = lines.slice(1);
+        }
+
+        // now print each remaining line
+        lines.forEach(line => {
+          const p = document.createElement("p");
+          p.textContent = line;
+          container.appendChild(p);
+        });
     })
     .catch(err => {
       console.error("polling error:", err);
