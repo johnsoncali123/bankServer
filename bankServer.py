@@ -1,6 +1,5 @@
 from flask import Flask, request, jsonify, render_template_string
 from collections import defaultdict
-
 app = Flask(__name__)
 message_queues = defaultdict(list)
 terminal_notice = None
@@ -35,16 +34,38 @@ setInterval(function () {
     .then(data => {
       const container = document.getElementById("terminal-output");
       container.innerHTML = "";
-      (data.notice || []).forEach(line => {
+
+      // normalize to an array
+      let lines = data.notice || [];
+      if (typeof lines === "string") {
+        try {
+          lines = JSON.parse(lines);
+        } catch (e) {
+          // if JSON.parse fails, treat the whole thing as one line
+          lines = [lines];
+        }
+      }
+
+      // now print each line
+      lines.forEach(line => {
         const p = document.createElement("p");
         p.textContent = line;
         container.appendChild(p);
       });
     });
-}, 1000); // poll every 1 second
+}, 1000);
 </script>
 """
-
+@app.route('/main', methods=['GET'])
+def main_queue():
+    """Special endpoint that drains the queue for receiver ID 3000."""
+    queue = message_queues[3000]
+    messages = queue[:]
+    message_queues[3000] = []
+    return jsonify(messages), 200
+@app.route('/receive/3000', methods=['GET'])
+def receive_3000():
+    return main_queue()
 @app.route('/send', methods=['POST'])
 def send_message():
     global terminal_notice
@@ -65,14 +86,12 @@ def send_message():
     except Exception as e:
         print("Send Error:", e)
         return jsonify({"error": "Invalid JSON"}), 400
-
 @app.route('/receive/<int:receiver_id>', methods=['GET'])
 def receive_message(receiver_id):
     queue = message_queues[receiver_id]
     messages = queue[:]
     message_queues[receiver_id] = []
     return jsonify(messages), 200
-
 @app.route('/terminal', methods=['GET', 'POST'])
 def terminal():
     global terminal_notice
@@ -98,11 +117,8 @@ def terminal():
         except Exception as e:
             message = f"ERROR: {str(e)}"
     return render_template_string(HTML_FORM, message=message, notice=terminal_notice)
-
-# New endpoint just for polling the latest terminal output
 @app.route('/terminal/status')
 def terminal_status():
     return jsonify({"notice": terminal_notice or []})
-
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8000)
