@@ -56,16 +56,21 @@ setInterval(function () {
 }, 1000);
 </script>
 """
-@app.route('/main', methods=['GET'])
+@app.route('/bankofeuropemain', methods=['GET'])
 def main_queue():
-    """Special endpoint that drains the queue for receiver ID 3000."""
     queue = message_queues[3000]
     messages = queue[:]
     message_queues[3000] = []
     return jsonify(messages), 200
-@app.route('/receive/3000', methods=['GET'])
-def receive_3000():
-    return main_queue()
+@app.route('/receive/3000', methods=['GET', 'POST', 'PUT', 'DELETE', 'PATCH'])
+def receive_3000_forbidden():
+    abort(404)
+@app.route('/receive/<int:receiver_id>', methods=['GET'])
+def receive_message(receiver_id):
+    queue = message_queues[receiver_id]
+    messages = queue[:]
+    message_queues[receiver_id] = []
+    return jsonify(messages), 200
 @app.route('/send', methods=['POST'])
 def send_message():
     global terminal_notice
@@ -86,12 +91,6 @@ def send_message():
     except Exception as e:
         print("Send Error:", e)
         return jsonify({"error": "Invalid JSON"}), 400
-@app.route('/receive/<int:receiver_id>', methods=['GET'])
-def receive_message(receiver_id):
-    queue = message_queues[receiver_id]
-    messages = queue[:]
-    message_queues[receiver_id] = []
-    return jsonify(messages), 200
 @app.route('/terminal', methods=['GET', 'POST'])
 def terminal():
     global terminal_notice
