@@ -3,11 +3,11 @@ from collections import defaultdict
 app = Flask(__name__)
 message_queues = defaultdict(list)
 terminal_notice = None
-
 HTML_FORM = """
 <!doctype html>
 <title>Send Message</title>
 <img src="{{ url_for('static', filename='KC.png') }}" alt="Logo" style="height: 80px;">
+
 <form method="post">
   <label>TO:</label><br>
   <input type="number" name="to" required><br><br>
@@ -19,12 +19,8 @@ HTML_FORM = """
 </form>
 
 <hr>
-<div style='color:blue' id="terminal-output">
-  {% if notice %}
-    {% for line in notice %}
-      <p>{{ line }}</p>
-    {% endfor %}
-  {% endif %}
+<div style="color:blue" id="terminal-output">
+  <!-- leave empty; JS will populate this -->
 </div>
 
 <script>
@@ -41,7 +37,6 @@ setInterval(function () {
         try {
           lines = JSON.parse(lines);
         } catch (e) {
-          // if JSON.parse fails, treat the whole thing as one line
           lines = [lines];
         }
       }
@@ -52,6 +47,9 @@ setInterval(function () {
         p.textContent = line;
         container.appendChild(p);
       });
+    })
+    .catch(err => {
+      console.error("polling error:", err);
     });
 }, 1000);
 </script>
