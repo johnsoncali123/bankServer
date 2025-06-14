@@ -26,35 +26,53 @@ HTML_FORM = """
 <script>
 setInterval(function () {
   fetch("/terminal/status")
-    .then(response => response.json())
+    .then(r => r.json())
     .then(data => {
       const container = document.getElementById("terminal-output");
       container.innerHTML = "";
-        // normalize to an array (same as before)
-        let lines = data.notice || [];
-        if (typeof lines === "string") {
-          try {
-            lines = JSON.parse(lines);
-          } catch (e) {
-            lines = [lines];
+
+      let notice = data.notice;
+      let lines = [];
+
+      // Case 1: it really is already an array
+      if (Array.isArray(notice)) {
+        lines = notice;
+
+      // Case 2: it’s a string—try JSON.parse first
+      } else if (typeof notice === "string") {
+        try {
+          const parsed = JSON.parse(notice);
+          if (Array.isArray(parsed)) {
+            lines = parsed;
+          } else {
+            // parsed to something else (string, object)
+            lines = [notice];
           }
+        } catch (_) {
+          // Fallback: strip [ ] then split on '","'
+          const stripped = notice
+            .replace(/^\[|\]$/g, "")         // remove leading [ and trailing ]
+            .replace(/^"|"$/g, "");         // remove any wrapping quotes
+          // Now split on "," (or '","')
+          lines = stripped.split(/","|',"/).map(s =>
+            s.replace(/^['"]|['"]$/g, "")    // trim stray quotes
+          );
         }
+      }
 
-        // drop the first prompt entry if it’s exactly “Select an option.”
-        if (lines[0] === "Select an option.") {
-          lines = lines.slice(1);
-        }
+      // Optional: drop the initial “Select an option.” if present
+      if (lines[0] && lines[0].match(/select an option/i)) {
+        lines.shift();
+      }
 
-        // now print each remaining line
-        lines.forEach(line => {
-          const p = document.createElement("p");
-          p.textContent = line;
-          container.appendChild(p);
-        });
+      // Render each line as its own <p>
+      lines.forEach(line => {
+        const p = document.createElement("p");
+        p.textContent = line;
+        container.appendChild(p);
+      });
     })
-    .catch(err => {
-      console.error("polling error:", err);
-    });
+    .catch(err => console.error("Terminal‐status error:", err));
 }, 1000);
 </script>
 """
