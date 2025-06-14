@@ -24,55 +24,44 @@ HTML_FORM = """
 </div>
 
 <script>
-setInterval(function () {
+setInterval(() => {
   fetch("/terminal/status")
-    .then(r => r.json())
+    .then(res => res.json())
     .then(data => {
+      console.log("terminal/status payload:", data);
       const container = document.getElementById("terminal-output");
       container.innerHTML = "";
 
-      let notice = data.notice;
+      // If there's no notice key or it's empty, bail out
+      if (!data.notice || data.notice.length === 0) {
+        return;
+      }
+
+      // Normalize to an array
       let lines = [];
-
-      // Case 1: it really is already an array
-      if (Array.isArray(notice)) {
-        lines = notice;
-
-      // Case 2: it’s a string—try JSON.parse first
-      } else if (typeof notice === "string") {
+      if (Array.isArray(data.notice)) {
+        lines = data.notice;
+      } else if (typeof data.notice === "string") {
         try {
-          const parsed = JSON.parse(notice);
-          if (Array.isArray(parsed)) {
-            lines = parsed;
-          } else {
-            // parsed to something else (string, object)
-            lines = [notice];
-          }
-        } catch (_) {
-          // Fallback: strip [ ] then split on '","'
-          const stripped = notice
-            .replace(/^\[|\]$/g, "")         // remove leading [ and trailing ]
-            .replace(/^"|"$/g, "");         // remove any wrapping quotes
-          // Now split on "," (or '","')
-          lines = stripped.split(/","|',"/).map(s =>
-            s.replace(/^['"]|['"]$/g, "")    // trim stray quotes
-          );
+          lines = JSON.parse(data.notice);
+        } catch (e) {
+          console.warn("Could not JSON.parse notice, skipping:", data.notice);
+          return;
         }
+      } else {
+        console.warn("Unexpected notice type:", typeof data.notice);
+        return;
       }
 
-      // Optional: drop the initial “Select an option.” if present
-      if (lines[0] && lines[0].match(/select an option/i)) {
-        lines.shift();
-      }
-
-      // Render each line as its own <p>
+      // Render, skipping the "Select an option." prompt
       lines.forEach(line => {
+        if (line === "Select an option.") return;
         const p = document.createElement("p");
         p.textContent = line;
         container.appendChild(p);
       });
     })
-    .catch(err => console.error("Terminal‐status error:", err));
+    .catch(err => console.error("Error polling /terminal/status:", err));
 }, 1000);
 </script>
 """
