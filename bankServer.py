@@ -3,6 +3,17 @@ from collections import defaultdict
 app = Flask(__name__)
 message_queues = defaultdict(list)
 terminal_notice = None
+const express = require('express');
+const app = express();
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type');
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  next();
+});
 HTML_FORM = """
 <!doctype html>
 <title>Send Message</title>
