@@ -1,3 +1,2 @@
 flask
-collections
 flask-cors
